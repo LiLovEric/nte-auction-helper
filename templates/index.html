@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>异环拍卖会分析工具</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=20260822e">
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <div class="header-top">
+                <h1>🏛️ 异环拍卖会分析工具</h1>
+            </div>
+            <nav class="tab-bar">
+                <button class="tab-btn active" onclick="switchTab('analyze')">📊 分析</button>
+                <button class="tab-btn" onclick="switchTab('memory')">📝 记忆池</button>
+            </nav>
+        </header>
+
+        <!-- 置顶按钮（独立于header，可拖动） -->
+        <button id="pin-btn" class="pin-btn active" title="取消置顶">📌</button>
+
+        <main class="main-stage">
+            <section id="analyze-tab" class="tab-content active">
+                <div class="two-column">
+                    <aside class="input-panel">
+                        <div class="panel-title">藏品信息</div>
+                        <div class="field-grid">
+                            <div class="form-group">
+                                <label for="avg">金色均价</label>
+                                <input type="number" id="avg" placeholder="如：65874" step="0.1">
+                            </div>
+                            <div class="form-group">
+                                <label for="total_items">总件数</label>
+                                <select id="total_items" class="count-select">
+                                    <option value="0">-- 选择总件数 --</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="purple_count">紫色件数</label>
+                                <select id="purple_count" class="count-select">
+                                    <option value="0">-- 选择紫色件数 --</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="gold_total_size">金色格子总数（可选）</label>
+                                <input type="number" id="gold_total_size" value="0" placeholder="如：26">
+                            </div>
+                            <div class="form-group">
+                                <label for="known_gold_count">已知金件（0=未知）</label>
+                                <input type="number" id="known_gold_count" value="0" min="0">
+                            </div>
+                            <div class="form-group">
+                                <label for="known_red_count">已知红件（0=未知）</label>
+                                <input type="number" id="known_red_count" value="0" min="0">
+                            </div>
+                            <div class="form-group">
+                                <label for="search_timeout">搜索超时（秒）</label>
+                                <input type="number" id="search_timeout" value="20" min="1" step="1">
+                            </div>
+                            <div class="form-group checkbox-wrap">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="double_gold">
+                                    <span>🔄 超级加倍（金色物品单价翻倍）</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="section-block gold-section">
+                            <div class="section-title">🟡 金色藏品价格选择</div>
+                            <div class="selector-row">
+                                <select id="gold_price_select" class="price-select">
+                                    <option value="">-- 选择金色价格 --</option>
+                                </select>
+                                <button class="btn-sm btn-add" onclick="addGoldPrice()">添加</button>
+                            </div>
+                            <div class="selector-row">
+                                <input type="text" id="gold_price_input" class="price-input" placeholder="手动输入，如 777 自动推荐" oninput="suggestGoldPrice(this.value)">
+                                <button class="btn-sm btn-add" onclick="addGoldPriceManual()">添加输入价</button>
+                            </div>
+                            <div id="gold_suggest" class="suggest-list"></div>
+                            <div id="gold_selected" class="selected-prices"></div>
+                        </div>
+
+                        <div class="section-block red-section">
+                            <div class="section-title">🔴 红色藏品价格选择</div>
+                            <div class="selector-row">
+                                <select id="red_price_select" class="price-select">
+                                    <option value="">-- 选择红色价格 --</option>
+                                </select>
+                                <button class="btn-sm btn-add" onclick="addRedPrice()">添加</button>
+                                <button class="btn-sm btn-add" onclick="addRedUnknown()">❓未知</button>
+                            </div>
+                            <div class="selector-row">
+                                <input type="text" id="red_price_input" class="price-input" placeholder="手动输入，如 288 自动推荐" oninput="suggestRedPrice(this.value)">
+                                <button class="btn-sm btn-add" onclick="addRedPriceManual()">添加输入价</button>
+                            </div>
+                            <div id="red_suggest" class="suggest-list"></div>
+                            <div class="selector-row">
+                                <input type="number" id="red_high_input" class="price-input" placeholder=">100万红色手动输入，如 1314520" min="1000001">
+                                <button class="btn-sm btn-add" onclick="addBigRedPrice()">添加大额</button>
+                            </div>
+                            <div id="red_selected" class="selected-prices"></div>
+                            <div class="auto-memory-hint">💡 已选择的红色价格会自动记录进记忆池</div>
+                        </div>
+                    </aside>
+
+                    <section class="result-panel">
+                        <button class="scan-btn" onclick="ocrFillFromScreen()">🔍 一键扫描</button>
+                        <div class="action-row">
+                            <button class="btn-primary action-half" onclick="analyze()">分析</button>
+                            <button class="btn-secondary action-half" onclick="resetForm()">重置</button>
+                        </div>
+                        <div id="loading" class="loading">搜索中...</div>
+                        <div class="results-card">
+                            <div id="results" class="results">
+                                <div class="results-empty">
+                                    <div class="results-empty-title">暂无分析结果</div>
+                                    <div>请填写左侧参数后点击分析</div>
+                                    <div>或点击一键扫描自动识别</div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </section>
+
+            <section id="memory-tab" class="tab-content">
+                <div class="memory-panel">
+                    <div class="panel-title">记忆池</div>
+                    <div class="memory-actions">
+                        <select id="memory_price_select" class="price-select memory-select">
+                            <option value="">-- 选择红色价格 --</option>
+                        </select>
+                        <button class="btn-primary" onclick="addMemoryFromSelect()">添加记录</button>
+                    </div>
+                    <div id="memory-content"></div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}?v=20260822e"></script>
+</body>
+</html>

@@ -1,0 +1,27 @@
+# Python cache and bytecode
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Runtime/generated files
+.deps_ready
+startup_error.log
+*.log
+*.tmp
+*.bak
+
+# Local environments and tooling
+.venv/
+venv/
+env/
+ENV/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.vscode/
+.idea/
+
+# OS noise
+.DS_Store
+Thumbs.db
