@@ -5,6 +5,7 @@ import sys
 import threading
 import time
 import traceback
+import multiprocessing
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -222,6 +223,7 @@ def main():
 
 
 if __name__ == "__main__":
+    multiprocessing.freeze_support()
     try:
         raise SystemExit(main())
     except Exception:
