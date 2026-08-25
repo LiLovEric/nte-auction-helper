@@ -1,0 +1,44 @@
+name: Build Windows EXE
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Build EXE
+      run: |
+        pyinstaller --noconfirm --clean --name "NTE-Auction-Helper" --windowed --add-data "templates;templates" --add-data "static;static" --add-data "red_history.json;." --add-data "red_weights.json;." --hidden-import=webview --hidden-import=rapidocr_onnxruntime --collect-all rapidocr_onnxruntime --collect-all onnxruntime desktop_app.py
+
+    - name: List output files
+      if: always()
+      run: |
+        Write-Host "===== Current directory ====="
+        Get-ChildItem
+        Write-Host "===== dist folder ====="
+        if (Test-Path dist) { Get-ChildItem -Recurse dist } else { Write-Host "dist folder not found" }
+        Write-Host "===== build folder ====="
+        if (Test-Path build) { Get-ChildItem build } else { Write-Host "build folder not found" }
+
+    - name: Upload EXE
+      uses: actions/upload-artifact@v4
+      with:
+        name: NTE-Auction-Helper-Windows
+        path: |
+          dist/**
+        if-no-files-found: warn
