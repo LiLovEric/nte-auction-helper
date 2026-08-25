@@ -1,0 +1,7 @@
+flask
+numpy
+pywebview
+pillow
+rapidocr-onnxruntime
+werkzeug
+pyinstaller
